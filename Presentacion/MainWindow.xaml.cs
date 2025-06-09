@@ -19,85 +19,58 @@ namespace Presentacion
     /// </summary>
     public partial class MainWindow : Window
     {
+        private GestorUniversidad datos = new GestorUniversidad();
+        private DataTable materiasSeleccionadas = new DataTable();
+
         public MainWindow()
         {
             InitializeComponent();
-            CargarDatos();
+            materiasSeleccionadas.Columns.Add("Cod_Materia", typeof(int));
+            materiasSeleccionadas.Columns.Add("Nombre", typeof(string));
+            materiasSeleccionadas.Columns.Add("Dia", typeof(string));
+            materiasSeleccionadas.Columns.Add("Hora_Inicio", typeof(string));
+            materiasSeleccionadas.Columns.Add("Hora_Fin", typeof(string));
         }
-        private void CargarDatos()
-        {
-            GestorUniversidad gestor = new GestorUniversidad()           
-        }
+
+
         private void Window_Loaded(object sender, RoutedEventArgs e)
         {
-            var estudiantes = datos.EjecutarConsulta("SELECT Cod_Estudiante FROM Estudiante");
-            cbEstudiante.ItemsSource = estudiantes.AsDataView();
+            cbEstudiante.ItemsSource = datos.EjecutarConsulta("SELECT Cod_Estudiante FROM Estudiante").DefaultView;
             cbEstudiante.DisplayMemberPath = "Cod_Estudiante";
-
-            cbAnio.ItemsSource = datos.EjecutarConsulta("SELECT DISTINCT Año FROM Gestion").AsDataView();
-            cbAnio.DisplayMemberPath = "Año";
-
-            cbSemestre.ItemsSource = datos.EjecutarConsulta("SELECT DISTINCT Semestre FROM Gestion").AsDataView();
-            cbSemestre.DisplayMemberPath = "Semestre";
-
-            cbGrupo.ItemsSource = datos.EjecutarConsulta("SELECT Cod_Grupo, Nombre FROM Grupo").AsDataView();
-            cbGrupo.DisplayMemberPath = "Nombre";
-            cbGrupo.SelectedValuePath = "Cod_Grupo";
         }
+
         private void cbEstudiante_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             if (cbEstudiante.SelectedItem == null) return;
             int codEstudiante = Convert.ToInt32((cbEstudiante.SelectedItem as DataRowView)["Cod_Estudiante"]);
-
-            var materias = datos.EjecutarConsulta($@"
-            SELECT m.Cod_Materia, m.Nombre 
-            FROM Plan_Estudiante pe
-            JOIN Plan_Materia pm ON pe.Cod_PlanEstudio = pm.Cod_PlanEstudio
-            JOIN Materia m ON pm.Cod_Materia = m.Cod_Materia
-            WHERE pe.Cod_Estudiante = {codEstudiante}");
-
-            lbMaterias.ItemsSource = materias.AsDataView();
-            lbMaterias.DisplayMemberPath = "Nombre";
-            lbMaterias.SelectedValuePath = "Cod_Materia";
+            dgDisponibles.ItemsSource = datos.ObtenerMateriasConHorario(codEstudiante).DefaultView;
         }
-        private void BtnInscribir_Click(object sender, RoutedEventArgs e)
+
+        private void BtnAgregar_Click(object sender, RoutedEventArgs e)
         {
-            int codEstudiante = Convert.ToInt32(cbEstudiante.Text);
-            int anio = Convert.ToInt32(cbAnio.Text);
-            string semestre = cbSemestre.Text;
-            int codGrupo = Convert.ToInt32(cbGrupo.SelectedValue);
+            if (dgDisponibles.SelectedItem == null || materiasSeleccionadas.Rows.Count >= 6) return;
 
-            foreach (DataRowView materia in lbMaterias.SelectedItems)
+            var row = (DataRowView)dgDisponibles.SelectedItem;
+            int cod = Convert.ToInt32(row["Cod_Materia"]);
+
+            if (!materiasSeleccionadas.AsEnumerable().Any(r => (int)r["Cod_Materia"] == cod))
             {
-                int codMateria = Convert.ToInt32(materia["Cod_Materia"]);
-
-                // Verifica si ya existe la Edicion
-                string queryEdicion = $@"
-            SELECT Cod_Edicion FROM Edicion
-            WHERE Cod_Materia = {codMateria} AND Año = {anio} AND Semestre = '{semestre}' AND Cod_Grupo = {codGrupo}";
-
-                var dtEd = datos.EjecutarConsulta(queryEdicion);
-                int codEdicion;
-
-                if (dtEd.Rows.Count > 0)
-                {
-                    codEdicion = Convert.ToInt32(dtEd.Rows[0]["Cod_Edicion"]);
-                }
-                else
-                {
-                    // Insertar nueva Edición
-                    datos.EjecutarConsulta($"INSERT INTO Edicion (Cod_Edicion, Año, Semestre, Cod_Grupo, Cod_Materia) VALUES (NEXT VALUE FOR Seq_Edicion, {anio}, '{semestre}', {codGrupo}, {codMateria})");
-                    dtEd = datos.EjecutarConsulta(queryEdicion);
-                    codEdicion = Convert.ToInt32(dtEd.Rows[0]["Cod_Edicion"]);
-                }
-
-                // Insertar en Asistencia
-                datos.EjecutarConsulta($"INSERT INTO Asistencia (Cod_Estudiante, Cod_Edicion) VALUES ({codEstudiante}, {codEdicion})");
+                materiasSeleccionadas.Rows.Add(row["Cod_Materia"], row["Nombre"], row["Dia"], row["Hora_Inicio"], row["Hora_Fin"]);
+                dgSeleccionadas.ItemsSource = materiasSeleccionadas.DefaultView;
             }
-
-            MessageBox.Show("Inscripción realizada.");
         }
 
+        private void BtnQuitar_Click(object sender, RoutedEventArgs e)
+        {
+            if (dgSeleccionadas.SelectedItem == null) return;
+            var row = (DataRowView)dgSeleccionadas.SelectedItem;
+            materiasSeleccionadas.Rows.Remove(row.Row);
+        }
 
+        private void BtnGuardar_Click(object sender, RoutedEventArgs e)
+        {
+            MessageBox.Show("Materias seleccionadas: " + materiasSeleccionadas.Rows.Count);
+            // Aquí insertarías la lógica para guardar en BD con validaciones adicionales.
+        }
     }
 }
