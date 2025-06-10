@@ -23,17 +23,17 @@ namespace CapaNegocio
         {
             try
             {
-                // Consulta para obtener la carrera del estudiante
-                string consulta = $"SELECT Carrera FROM Persona WHERE CI IN " +
-                                  $"(SELECT CI FROM Estudiante WHERE Cod_Estudiante = " +
-                                  $"(SELECT Cod_Estudiante FROM Estudiante WHERE CI = '{nombreEstudiante}'))";
+                // Consulta para obtener la carrera del estudiante (utilizando Cod_Carrera)
+                string consulta = $"SELECT c.Nombre_Carrera FROM Persona p " +
+                                  $"JOIN Carrera c ON p.Cod_Carrera = c.Cod_Carrera " +
+                                  $"WHERE p.CI = '{nombreEstudiante}'";
 
                 DataTable dt = accesoDatos.EjecutarConsulta(consulta);
 
                 // Verificamos si se obtuvo el resultado
                 if (dt.Rows.Count > 0)
                 {
-                    return dt.Rows[0]["Carrera"].ToString(); // Devuelve la carrera del estudiante
+                    return dt.Rows[0]["Nombre_Carrera"].ToString(); // Devuelve el nombre de la carrera
                 }
                 else
                 {
@@ -77,9 +77,20 @@ namespace CapaNegocio
 
                 int codEstudiante = (int)dtEstudiante.Rows[0]["Cod_Estudiante"];
 
+                // Obtener la edición de la materia para la inscripción
+                string consultaEdicion = $"SELECT Cod_Edicion FROM Edicion_Materia WHERE Cod_Materia = {codMateria} ORDER BY Cod_Edicion DESC LIMIT 1";
+                DataTable dtEdicion = accesoDatos.EjecutarConsulta(consultaEdicion);
+
+                if (dtEdicion.Rows.Count == 0)
+                {
+                    throw new Exception("No se encontró una edición para la materia.");
+                }
+
+                int codEdicion = (int)dtEdicion.Rows[0]["Cod_Edicion"];
+
                 // Consulta para insertar la inscripción del estudiante en la materia
-                string consulta = $"INSERT INTO Est_EdNota (Cod_Estudiante, Cod_Materia, Nota) " +
-                                  $"VALUES ({codEstudiante}, {codMateria}, NULL)"; // Aquí NULL para la nota inicial
+                string consulta = $"INSERT INTO Est_EdNota (Cod_Estudiante, Cod_Edicion, Cod_Materia, Nota) " +
+                                  $"VALUES ({codEstudiante}, {codEdicion}, {codMateria}, NULL)"; // Aquí NULL para la nota inicial
 
                 accesoDatos.EjecutarConsulta(consulta); // Ejecutamos la consulta de inscripción
             }
@@ -105,8 +116,19 @@ namespace CapaNegocio
 
                 int codEstudiante = (int)dtEstudiante.Rows[0]["Cod_Estudiante"];
 
+                // Obtener la edición de la materia para eliminar la inscripción
+                string consultaEdicion = $"SELECT Cod_Edicion FROM Edicion_Materia WHERE Cod_Materia = {codMateria} ORDER BY Cod_Edicion DESC LIMIT 1";
+                DataTable dtEdicion = accesoDatos.EjecutarConsulta(consultaEdicion);
+
+                if (dtEdicion.Rows.Count == 0)
+                {
+                    throw new Exception("No se encontró una edición para la materia.");
+                }
+
+                int codEdicion = (int)dtEdicion.Rows[0]["Cod_Edicion"];
+
                 // Consulta para eliminar la inscripción del estudiante en la materia
-                string consulta = $"DELETE FROM Est_EdNota WHERE Cod_Estudiante = {codEstudiante} AND Cod_Materia = {codMateria}";
+                string consulta = $"DELETE FROM Est_EdNota WHERE Cod_Estudiante = {codEstudiante} AND Cod_Edicion = {codEdicion} AND Cod_Materia = {codMateria}";
 
                 accesoDatos.EjecutarConsulta(consulta); // Ejecutamos la consulta de eliminación
             }
