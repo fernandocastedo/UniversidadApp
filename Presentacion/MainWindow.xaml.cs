@@ -19,58 +19,123 @@ namespace Presentacion
     /// </summary>
     public partial class MainWindow : Window
     {
-        private GestorUniversidad datos = new GestorUniversidad();
-        private DataTable materiasSeleccionadas = new DataTable();
-
+        private GestorUniversidad gestor;
+        private List<MateriaViewModel> materiasSeleccionadas;
         public MainWindow()
         {
             InitializeComponent();
-            materiasSeleccionadas.Columns.Add("Cod_Materia", typeof(int));
-            materiasSeleccionadas.Columns.Add("Nombre", typeof(string));
-            materiasSeleccionadas.Columns.Add("Dia", typeof(string));
-            materiasSeleccionadas.Columns.Add("Hora_Inicio", typeof(string));
-            materiasSeleccionadas.Columns.Add("Hora_Fin", typeof(string));
+            gestor = new GestorUniversidad();  // Inicializamos el gestor para la lógica de negocio
+            materiasSeleccionadas = new List<MateriaViewModel>();
         }
-
-
-        private void Window_Loaded(object sender, RoutedEventArgs e)
+        private void BuscarEstudiante_Click(object sender, RoutedEventArgs e)
         {
-            cbEstudiante.ItemsSource = datos.EjecutarConsulta("SELECT Cod_Estudiante FROM Estudiante").DefaultView;
-            cbEstudiante.DisplayMemberPath = "Cod_Estudiante";
-        }
-
-        private void cbEstudiante_SelectionChanged(object sender, SelectionChangedEventArgs e)
-        {
-            if (cbEstudiante.SelectedItem == null) return;
-            int codEstudiante = Convert.ToInt32((cbEstudiante.SelectedItem as DataRowView)["Cod_Estudiante"]);
-            dgDisponibles.ItemsSource = datos.ObtenerMateriasConHorario(codEstudiante).DefaultView;
-        }
-
-        private void BtnAgregar_Click(object sender, RoutedEventArgs e)
-        {
-            if (dgDisponibles.SelectedItem == null || materiasSeleccionadas.Rows.Count >= 6) return;
-
-            var row = (DataRowView)dgDisponibles.SelectedItem;
-            int cod = Convert.ToInt32(row["Cod_Materia"]);
-
-            if (!materiasSeleccionadas.AsEnumerable().Any(r => (int)r["Cod_Materia"] == cod))
+            try
             {
-                materiasSeleccionadas.Rows.Add(row["Cod_Materia"], row["Nombre"], row["Dia"], row["Hora_Inicio"], row["Hora_Fin"]);
-                dgSeleccionadas.ItemsSource = materiasSeleccionadas.DefaultView;
+                string nombreEstudiante = txtNombreEstudiante.Text;
+                if (string.IsNullOrEmpty(nombreEstudiante))
+                {
+                    MessageBox.Show("Por favor, ingrese el nombre del estudiante.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                    return;
+                }
+
+                // Llamamos al método de la capa de negocio para obtener la carrera del estudiante
+                string carrera = gestor.ObtenerCarreraPorEstudiante(nombreEstudiante);
+
+                if (string.IsNullOrEmpty(carrera))
+                {
+                    MessageBox.Show("Estudiante no encontrado o sin carrera asignada.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                    return;
+                }
+
+                // Mostrar la carrera en el TextBox correspondiente
+                txtCarrera.Text = carrera;
+
+                // Cargar las materias disponibles
+                CargarMaterias();
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Error: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
 
-        private void BtnQuitar_Click(object sender, RoutedEventArgs e)
+        // Cargar materias disponibles
+        private void CargarMaterias()
         {
-            if (dgSeleccionadas.SelectedItem == null) return;
-            var row = (DataRowView)dgSeleccionadas.SelectedItem;
-            materiasSeleccionadas.Rows.Remove(row.Row);
+            try
+            {
+                // Obtenemos las materias del negocio
+                var materias = gestor.ObtenerMaterias().AsEnumerable().Select(r => new MateriaViewModel
+                {
+                    Cod_Materia = r.Field<int>("Cod_Materia"),
+                    Nombre = r.Field<string>("Nombre"),
+                    Credito = r.Field<int>("Credito"),
+                    IsSelected = false  // Inicialmente no está seleccionada
+                }).ToList();
+
+                dgMaterias.ItemsSource = materias;
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Error al cargar las materias: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
         }
 
-        private void BtnGuardar_Click(object sender, RoutedEventArgs e)
+        // Añadir inscripción de materia
+        private void Añadir_Click(object sender, RoutedEventArgs e)
         {
-            MessageBox.Show("Materias seleccionadas: " + materiasSeleccionadas.Rows.Count);
-            // Aquí insertarías la lógica para guardar en BD con validaciones adicionales.
+            try
+            {
+                // Verificar que se haya ingresado un código de edición
+                if (string.IsNullOrEmpty(txtCodigoEdicion.Text))
+                {
+                    MessageBox.Show("Por favor, ingrese el código de edición.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                    return;
+                }
+
+                int codigoEdicion = int.Parse(txtCodigoEdicion.Text);
+                var materiasSeleccionadas = dgMaterias.ItemsSource.Cast<MateriaViewModel>()
+                                            .Where(m => m.IsSelected)
+                                            .ToList();
+
+                // Verificar que no se superen las 6 materias por edición
+                if (materiasSeleccionadas.Count > 6)
+                {
+                    MessageBox.Show("No puede seleccionar más de 6 materias.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                    return;
+                }
+
+                // Inscribir las materias seleccionadas
+                foreach (var materia in materiasSeleccionadas)
+                {
+                    gestor.InscribirMateria(txtNombreEstudiante.Text, materia.Cod_Materia);
+                }
+
+                MessageBox.Show("Las materias han sido inscritas exitosamente.", "Éxito", MessageBoxButton.OK, MessageBoxImage.Information);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Error al añadir la inscripción: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+        // Modelo de la materia con estado de selección
+        public class MateriaViewModel
+        {
+            public int Cod_Materia { get; set; }
+            public string Nombre { get; set; }
+            public int Credito { get; set; }
+            public bool IsSelected { get; set; }
+        }
+
+        private void Eliminar_Click(object sender, RoutedEventArgs e)
+        {
+
+        }
+
+        private void Editar_Click(object sender, RoutedEventArgs e)
+        {
+
         }
     }
 }

@@ -5,135 +5,56 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:Presentacion"
         mc:Ignorable="d"
-        Title="MainWindow" Height="450" Width="800">
-    <Window.Resources>
-        <Style TargetType="Button">
-            <Setter Property="Padding" Value="15,5"/>
-            <Setter Property="Margin" Value="5"/>
-            <Setter Property="MinWidth" Value="80"/>
-        </Style>
-        <Style TargetType="DataGrid">
-            <Setter Property="AlternatingRowBackground" Value="#F5F5F5"/>
-            <Setter Property="HorizontalGridLinesBrush" Value="#E0E0E0"/>
-            <Setter Property="VerticalGridLinesBrush" Value="#E0E0E0"/>
-        </Style>
-    </Window.Resources>
-    <Grid Margin="10">
+        Title="Inscripción de Materias" Height="600" Width="1000" MinHeight="600" MinWidth="1000">
+    <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
-        <!-- Header -->
-        <TextBlock Text="Seleccione las materias a inscribir" 
-                 FontSize="16" 
-                 Margin="0,0,0,10"
-                 Grid.Row="0"/>
+        <!-- Fila 1: Controles de entrada -->
+        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="10" Grid.Row="0">
+            <Label Content="CI Estudiante:" VerticalAlignment="Center" Margin="5"/>
+            <TextBox x:Name="txtNombreEstudiante" Width="200" Margin="5"/>
+            <Label Content="Carrera:" VerticalAlignment="Center" Margin="5"/>
+            <TextBox x:Name="txtCarrera" Width="200" Margin="5" IsReadOnly="True"/>
+            <Button Content="Buscar Estudiante" Width="150" Margin="5" Click="BuscarEstudiante_Click"/>
+            <Label Content="Código Edición:" VerticalAlignment="Center" Margin="5"/>
+            <TextBox x:Name="txtCodigoEdicion" Width="100" Margin="5"/>
+        </StackPanel>
 
-        <!-- Tabla de materias -->
-        <DataGrid Grid.Row="1"
-                  x:Name="dgMaterias" 
-                  AutoGenerateColumns="False"
-                  ItemsSource="{Binding MateriasDisponibles}"
-                  SelectionMode="Single"
-                  SelectionUnit="FullRow"
-                  IsReadOnly="True"
-                  CanUserAddRows="False"
-                  Margin="0,0,0,10">
-            <DataGrid.RowStyle>
-                <Style TargetType="DataGridRow">
-                    <Style.Triggers>
-                        <Trigger Property="IsMouseOver" Value="True">
-                            <Setter Property="Background" Value="#FFE8E8E8"/>
-                        </Trigger>
-                    </Style.Triggers>
-                </Style>
-            </DataGrid.RowStyle>
-            <DataGrid.Columns>
-                <DataGridTemplateColumn>
-                    <DataGridTemplateColumn.CellTemplate>
-                        <DataTemplate>
-                            <ToggleButton x:Name="ExpanderButton"
-                                        Width="20"
-                                        Height="20"
-                                        Content="▼"
-                                        Click="ExpanderButton_Click">
-                                <ToggleButton.Style>
-                                    <Style TargetType="ToggleButton">
-                                        <Style.Triggers>
-                                            <Trigger Property="IsChecked" Value="True">
-                                                <Setter Property="Content" Value="▲"/>
-                                            </Trigger>
-                                        </Style.Triggers>
-                                    </Style>
-                                </ToggleButton.Style>
-                            </ToggleButton>
-                        </DataTemplate>
-                    </DataGridTemplateColumn.CellTemplate>
-                </DataGridTemplateColumn>
-                <DataGridCheckBoxColumn Header="Inscribir" 
-                                      Binding="{Binding EsSeleccionada, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                                      Width="Auto"/>
-                <DataGridTextColumn Header="Materia" 
-                                  Binding="{Binding Nombre}" 
-                                  Width="*"/>
-                <DataGridTextColumn Header="Créditos" 
-                                  Binding="{Binding Creditos}" 
-                                  Width="Auto"/>
-                <DataGridTemplateColumn Header="Grupo" Width="Auto">
-                    <DataGridTemplateColumn.CellTemplate>
-                        <DataTemplate>
-                            <ComboBox ItemsSource="{Binding GrupoOptions}" 
-                                    SelectedItem="{Binding Grupo, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                                    SelectionChanged="cbGrupo_SelectionChanged"
-                                    Width="100"
-                                    IsEnabled="{Binding EsSeleccionada}"/>
-                        </DataTemplate>
-                    </DataGridTemplateColumn.CellTemplate>
-                </DataGridTemplateColumn>
-                <DataGridCheckBoxColumn Header="Confirmar" 
-                                      Binding="{Binding EsConfirmada, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                                      Width="Auto"/>
-            </DataGrid.Columns>
-            <DataGrid.RowDetailsTemplate>
-                <DataTemplate>
-                    <Border BorderBrush="#FFD5D5D5" BorderThickness="1" Margin="10">
-                        <Grid Background="#FFF8F8F8" Margin="5">
-                            <Grid.RowDefinitions>
-                                <RowDefinition Height="Auto"/>
-                                <RowDefinition Height="Auto"/>
-                                <RowDefinition Height="Auto"/>
-                            </Grid.RowDefinitions>
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="Auto"/>
-                                <ColumnDefinition Width="*"/>
-                            </Grid.ColumnDefinitions>
+        <!-- Fila 2: DataGrids (materias disponibles y horario) -->
+        <Grid Grid.Row="1" Margin="10">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
 
-                            <TextBlock Grid.Row="0" Grid.Column="0" Text="Plan de Estudio:" FontWeight="Bold" Margin="5"/>
-                            <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding PlanEstudio.Detalles}" Margin="5"/>
+            <!-- DataGrid para Materias con Checkbox -->
+            <DataGrid x:Name="dgMaterias" Grid.Column="0" AutoGenerateColumns="False" Height="300" Margin="5">
+                <DataGrid.Columns>
+                    <DataGridTemplateColumn Header="Seleccionar" Width="80">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <CheckBox IsChecked="{Binding IsSelected}" />
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+                    <DataGridTextColumn Header="Materia" Binding="{Binding Nombre}" />
+                    <DataGridTextColumn Header="Créditos" Binding="{Binding Credito}" />
+                </DataGrid.Columns>
+            </DataGrid>
 
-                            <TextBlock Grid.Row="1" Grid.Column="0" Text="Horas Teóricas:" FontWeight="Bold" Margin="5"/>
-                            <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding PlanEstudio.Horas_Teoricas}" Margin="5"/>
+            <!-- DataGrid para Horario -->
+            <DataGrid x:Name="dgHorario" Grid.Column="1" AutoGenerateColumns="True" Height="300" Margin="5"/>
+        </Grid>
 
-                            <TextBlock Grid.Row="2" Grid.Column="0" Text="Horas Prácticas:" FontWeight="Bold" Margin="5"/>
-                            <TextBlock Grid.Row="2" Grid.Column="1" Text="{Binding PlanEstudio.Horas_Practicas}" Margin="5"/>
-                        </Grid>
-                    </Border>
-                </DataTemplate>
-            </DataGrid.RowDetailsTemplate>
-        </DataGrid>
-
-        <!-- Footer -->
-        <StackPanel Grid.Row="2" 
-                    Orientation="Horizontal" 
-                    HorizontalAlignment="Right">
-            <TextBlock Text="{Binding MateriasSeleccionadasCount, StringFormat='Materias seleccionadas: {0}/7'}" 
-                      VerticalAlignment="Center"
-                      Margin="0,0,15,0"/>
-            <Button Content="Aceptar" 
-                    Command="{Binding AceptarCommand}" 
-                    IsEnabled="{Binding MateriasSeleccionadasValidas}"/>
+        <!-- Fila 3: Botones de acción -->
+        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="10" Grid.Row="2">
+            <Button x:Name="btnAñadir" Content="Añadir" Width="100" Margin="10" Click="Añadir_Click"/>
+            <Button x:Name="btnEditar" Content="Editar" Width="100" Margin="10" Click="Editar_Click"/>
+            <Button x:Name="btnEliminar" Content="Eliminar" Width="100" Margin="10" Click="Eliminar_Click"/>
         </StackPanel>
     </Grid>
 </Window>
