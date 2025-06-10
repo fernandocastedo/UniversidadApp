@@ -14,14 +14,17 @@
         </Grid.RowDefinitions>
 
         <!-- Fila 1: Controles de entrada -->
-        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="10" Grid.Row="0">
-            <Label Content="CI Estudiante:" VerticalAlignment="Center" Margin="5"/>
-            <TextBox x:Name="txtNombreEstudiante" Width="200" Margin="5"/>
-            <Label Content="Carrera:" VerticalAlignment="Center" Margin="5"/>
-            <TextBox x:Name="txtCarrera" Width="200" Margin="5" IsReadOnly="True"/>
-            <Button Content="Buscar Estudiante" Width="150" Margin="5" Click="BuscarEstudiante_Click"/>
-            <Label Content="Código Edición:" VerticalAlignment="Center" Margin="5"/>
-            <TextBox x:Name="txtCodigoEdicion" Width="100" Margin="5"/>
+        <StackPanel>
+            <!-- Primera fila con datos del estudiante -->
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="10">
+                <Label Content="CI Estudiante:" VerticalAlignment="Center" Margin="5"/>
+                <TextBox x:Name="txtNombreEstudiante" Width="200" Margin="5"/>
+                <Label Content="Carrera:" VerticalAlignment="Center" Margin="5"/>
+                <TextBox x:Name="txtCarrera" Width="200" Margin="5" IsReadOnly="True"/>
+                <Button Content="Buscar Estudiante" Width="150" Margin="5" Click="BuscarEstudiante_Click"/>
+                <Label Content="Código Edición:" VerticalAlignment="Center" Margin="5"/>
+                <TextBox x:Name="txtCodigoEdicion" Width="100" Margin="5"/>
+            </StackPanel>
         </StackPanel>
 
         <!-- Fila 2: DataGrids (materias disponibles y horario) -->
@@ -31,8 +34,15 @@
                 <ColumnDefinition Width="*" />
             </Grid.ColumnDefinitions>
 
+            <!-- Label "Materias Disponibles" -->
+            <Label Content="Materias Disponibles" 
+               FontWeight="Bold" 
+               HorizontalAlignment="Center" 
+               Margin="5" 
+               Grid.Row="0"/>
+
             <!-- DataGrid para Materias con Checkbox -->
-            <DataGrid x:Name="dgMaterias" Grid.Column="0" AutoGenerateColumns="False" Height="300" Margin="5">
+            <DataGrid x:Name="dgMaterias" Grid.Column="0" AutoGenerateColumns="False" Height="Auto" Margin="5,39,5,5">
                 <DataGrid.Columns>
                     <DataGridTemplateColumn Header="Seleccionar" Width="80">
                         <DataGridTemplateColumn.CellTemplate>
@@ -46,8 +56,31 @@
                 </DataGrid.Columns>
             </DataGrid>
 
-            <!-- DataGrid para Horario -->
-            <DataGrid x:Name="dgHorario" Grid.Column="1" AutoGenerateColumns="True" Height="300" Margin="5"/>
+            <!-- Columna derecha: Semestre y Horario -->
+            <Grid Grid.Column="1">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
+
+                <!-- ComboBox para semestre -->
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="10,5,10,5" Grid.Row="0">
+                    <TextBlock Text="Materias Inscritas para el Semestre:" 
+                              FontWeight="Bold" 
+                              VerticalAlignment="Center" 
+                              Margin="0,0,10,0"/>
+                    <ComboBox x:Name="cmbSemestreSincronizado" 
+                              ItemsSource="{Binding Semestres}" 
+                              SelectedItem="{Binding SemestreSeleccionado}" 
+                              DisplayMemberPath="Nombre" 
+                              IsEnabled="False" 
+                              Width="150" 
+                              VerticalAlignment="Center"/>
+                </StackPanel>
+
+                <!-- DataGrid para Horario -->
+                <DataGrid x:Name="dgHorario" Grid.Row="1" AutoGenerateColumns="True" Height="Auto" Margin="5"/>
+            </Grid>
         </Grid>
 
         <!-- Fila 3: Botones de acción -->
